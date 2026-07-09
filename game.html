@@ -55,13 +55,29 @@
             document.getElementById('playerTag').innerText = `🎮 Active: ${activeUser.display_name}`;
         }
 
-        // Live Supabase Production Configuration
+        // Live Supabase Production Configuration with Safety Wrappers
         const SUPABASE_URL = 'https://xkyvyyjlexeadaqgexgw.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_ZytZF6HwieXZuAKcMNX_vQ_IjX8gduC';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabase = null;
+
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log("Supabase Client initialized safely.");
+            } else {
+                console.warn("Supabase CDN script unavailable. Falling back to sandbox.");
+            }
+        } catch (err) {
+            console.error("Failed to initialize Supabase:", err);
+        }
 
         async function fetchLiveLeaderboard() {
             const container = document.getElementById('leaderboard-list');
+            if (!supabase) {
+                container.innerHTML = '<li>1. Local Admin <strong>1,500 pts</strong></li><li>2. ' + (activeUser ? activeUser.display_name : 'Player') + ' <strong>0 pts</strong></li>';
+                return;
+            }
+
             try {
                 const { data, error } = await supabase.from('leaderboards').select('display_name, score').order('score', { ascending: false }).limit(10);
                 if (error) throw error;
@@ -75,13 +91,13 @@
                     container.innerHTML += `<li><span>${i + 1}. ${row.display_name}</span> <strong>${row.score} pts</strong></li>`;
                 });
             } catch(e) {
-                container.innerHTML = '<li>Error sync-loading live metrics.</li>';
+                container.innerHTML = '<li>Local Mode active (Cannot reach leaderboards)</li>';
                 console.error(e);
             }
         }
 
         async function submitHighScore(finalScore) {
-            if (!activeUser) return;
+            if (!activeUser || !supabase) return;
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) return;
@@ -104,13 +120,19 @@
         }
 
         // --- DYNAMIC SCRIPT INJECTION MATRIX ---
-        // --- DYNAMIC SCRIPT INJECTION MATRIX ---
+        // This is now isolated from the database setup so it cannot be blocked!
         const activeGame = urlParams.get('game') || 'dino';
         document.getElementById('game-title').innerText = activeGame.toUpperCase() + " RUNNER";
 
-        // Adding the leading slash forces the browser to look from the root directory
         const scriptPipeline = document.createElement('script');
-        scriptPipeline.src = `/games/${activeGame}/${activeGame}.js`; 
+        scriptPipeline.src = `games/${activeGame}/${activeGame}.js`;
+        
+        // Handle errors if file cannot be found in paths
+        scriptPipeline.onerror = function() {
+            console.error(`Failed to load game script at: ${scriptPipeline.src}`);
+            alert(`Could not load the game file structure for "${activeGame}". Check folder layout capitalization!`);
+        };
+
         document.body.appendChild(scriptPipeline);
 
         // Run leaderboard setup
