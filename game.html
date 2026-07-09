@@ -1,0 +1,22 @@
+<div>
+    <p>Press <strong>Space</strong> or <strong>Up Arrow</strong> to Jump. Click Canvas to Start.</p>
+    <canvas id="gameCanvas" width="600" height="150"></canvas>
+</div>
+
+<script>
+    verifyAccess(); // Make sure they are allowed here today
+
+    // --- DYNAMIC GAME LOADER ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameToLoad = urlParams.get('game') || 'dino'; // Default to dino if none specified
+
+    // Dynamically inject the game's script file
+    const gameScript = document.createElement('script');
+    gameScript.src = `games/${gameToLoad}/${gameToLoad}.js`;
+    document.body.appendChild(gameScript);
+
+    // This global function will be called by your separate game files when the player dies
+    function handleGameOver(finalScore) {
+        submitHighScore(finalScore); 
+    }
+</script>

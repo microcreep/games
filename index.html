@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Daily Goose Hunt</title>
+    <style>
+        body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        input, button { padding: 10px; font-size: 16px; margin: 5px; }
+        .hint { color: #ffca28; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>The Goose Has Flown... 🪿</h1>
+    <p>The game moves every 24 hours. Enter today's secret phrase to find it:</p>
+    
+    <p class="hint">Hint: Today's date in YYYY-MM-DD format (e.g., 2026-07-09)</p>
+
+    <input type="text" id="secretInput" placeholder="Enter secret phrase">
+    <button onclick="checkSecret()">Hunt</button>
+
+    <script src="app.js"></script>
+</body>
+</html>
