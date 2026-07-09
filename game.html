@@ -115,13 +115,14 @@
         }
 
         // Pull and run the requested module file path smoothly
-        const activeGame = urlParams.get('game') || 'dino';
+       const activeGame = urlParams.get('game') || 'dino';
         document.getElementById('game-title').innerText = activeGame.toUpperCase() + " RUNNER";
 
         const scriptPipeline = document.createElement('script');
-        scriptPipeline.src = `games/${activeGame}/${activeGame}.js`;
-        document.body.appendChild(scriptPipeline);
 
+        // Adding the leading slash '/' forces Codespaces to look from the workspace root directory!
+        const targetPath = `/games/${activeGame}/${activeGame}.js`;
+        scriptPipeline.src = targetPath;
         fetchLiveLeaderboard();
     </script>
 </body>
