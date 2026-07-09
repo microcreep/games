@@ -11,7 +11,6 @@ function checkSecret() {
     const correctSecret = getDailySecret();
 
     if (userInput === correctSecret) {
-        // Redirect straight to the Identity Gateway
         window.location.href = `auth.html?key=${correctSecret}`;
     } else {
         alert("Wrong answer! The goose eludes you.");
