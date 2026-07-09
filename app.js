@@ -1,4 +1,4 @@
-// Function to get today's date string (YYYY-MM-DD)
+// Function to get today's date string dynamically (YYYY-MM-DD)
 function getDailySecret() {
     const today = new Date();
     const year = today.getFullYear();
@@ -7,27 +7,27 @@ function getDailySecret() {
     return `${year}-${month}-${day}`; 
 }
 
-// Checked when a user submits their guess on the homepage
+// Executed when a user submits their guess on index.html
 function checkSecret() {
     const userInput = document.getElementById('secretInput').value.trim();
     const correctSecret = getDailySecret();
 
     if (userInput === correctSecret) {
-        // Redirect them to the game page with the secret key in the URL
-        window.location.href = `game.html?key=${correctSecret}`;
+        // Redirect them to the main menu selection page while forwarding the security token
+        window.location.href = `arcade.html?key=${correctSecret}`;
     } else {
         alert("Wrong answer! The goose eludes you.");
     }
 }
 
-// Guard clause for the game page to make sure they didn't cheat
+// Guard logic to prevent bypassing or using expired session links
 function verifyAccess() {
     const urlParams = new URLSearchParams(window.location.search);
     const key = urlParams.get('key');
     const correctSecret = getDailySecret();
 
     if (key !== correctSecret) {
-        // Kick them back to the hunt page if the key is missing or old
+        // Access denied: boot them back to the hunt portal
         window.location.href = 'index.html';
     }
 }
