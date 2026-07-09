@@ -5,18 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Goose Arcade - Execution Core</title>
     <style>
-        body { background: #1e1e2e; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .navigation-row { margin-bottom: 20px; text-align: left; max-width: 800px; margin: 0 auto 20px auto; }
-        .back-btn { padding: 8px 16px; background: #f38ba8; border: none; border-radius: 6px; cursor: pointer; color: #11111b; font-weight: bold; }
-        #auth-container { margin: 20px auto; background: #313244; padding: 20px; border-radius: 10px; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        input { padding: 8px; margin: 6px; border-radius: 4px; border: 1px solid #45475a; background: #1e1e2e; color: #fff; width: 80%; }
-        .btn-action { padding: 8px 15px; background: #a6e3a1; border: none; border-radius: 4px; cursor: pointer; color: #11111b; font-weight: bold; margin: 5px; }
-        canvas { background: #f8f9fa; display: block; margin: 30px auto; border-radius: 6px; border: 3px solid #cdd6f4; box-shadow: 0 6px 15px rgba(0,0,0,0.4); }
-        .leaderboard-box { margin: 30px auto; background: #313244; padding: 20px; border-radius: 10px; max-width: 350px; text-align: left; }
-        .leaderboard-box h3 { text-align: center; margin-top: 0; color: #f5e0dc; border-bottom: 2px solid #45475a; padding-bottom: 10px; }
+        body { 
+            background: #1e1e2e; 
+            color: #fff; 
+            font-family: sans-serif; 
+            text-align: center; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .navigation-row { 
+            margin-bottom: 20px; 
+            text-align: left; 
+            max-width: 1000px; 
+            margin: 0 auto 20px auto; 
+        }
+        .back-btn { 
+            padding: 10px 20px; 
+            background: #f38ba8; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            color: #11111b; 
+            font-weight: bold; 
+        }
+        #auth-container { 
+            margin: 20px auto; 
+            background: #313244; 
+            padding: 20px; 
+            border-radius: 10px; 
+            max-width: 400px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+        }
+        input { 
+            padding: 10px; 
+            margin: 6px; 
+            border-radius: 4px; 
+            border: 1px solid #45475a; 
+            background: #1e1e2e; 
+            color: #fff; 
+            width: 85%; 
+        }
+        .btn-action { 
+            padding: 10px 20px; 
+            background: #a6e3a1; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            color: #11111b; 
+            font-weight: bold; 
+            margin: 5px; 
+        }
+        
+        /* Game Area Layout - Heavy Focus on Canvas Size */
+        #game-area {
+            display: none; /* Hidden until player signs in */
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        canvas { 
+            background: #f8f9fa; 
+            display: block; 
+            margin: 20px auto; 
+            border-radius: 8px; 
+            border: 4px solid #cdd6f4; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
+            width: 100%; /* Force it to stretch across its container */
+            max-width: 900px; 
+            height: auto; /* Maintain aspect ratio aspect */
+        }
+
+        .leaderboard-box { 
+            margin: 40px auto; 
+            background: #313244; 
+            padding: 20px; 
+            border-radius: 10px; 
+            max-width: 400px; 
+            text-align: left; 
+        }
+        .leaderboard-box h3 { 
+            text-align: center; 
+            margin-top: 0; 
+            color: #f5e0dc; 
+            border-bottom: 2px solid #45475a; 
+            padding-bottom: 10px; 
+        }
         ul { list-style: none; padding: 0; margin: 0; }
         li { padding: 8px 0; border-bottom: 1px solid #45475a; display: flex; justify-content: space-between; }
-        li:last-child { border-bottom: none; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -37,53 +111,70 @@
             <button class="btn-action" onclick="handleRegister()">Sign Up</button>
             <button class="btn-action" onclick="handleLogin()">Sign In</button>
         </div>
-        <p id="auth-status" style="margin-top: 10px; font-size: 14px; color: #fab387; text-align: center; font-weight: bold;"></p>
+        <p id="auth-status" style="margin-top: 10px; font-size: 14px; color: #fab387; font-weight: bold;"></p>
     </div>
 
-    <div>
-        <p style="color: #a6adc8;">Controls: Tap/Click inside box to run. Use <strong>Spacebar</strong> or <strong>Up Arrow</strong> to jump.</p>
-        <canvas id="gameCanvas" width="600" height="150"></canvas>
+    <div id="game-area">
+        <h2 id="game-title">Loading Game Elements...</h2>
+        <p style="color: #a6adc8;">Controls: Click inside the box to start. Use <strong>Spacebar</strong> or <strong>Up Arrow</strong> to jump.</p>
+        <canvas id="gameCanvas" width="800" height="250"></canvas>
     </div>
 
     <div class="leaderboard-box">
         <h3>Top Arcade Run Logs</h3>
         <ul id="leaderboard-list">
-            <li>Loading active registry profiles...</li>
+            <li>Waiting for user verification session...</li>
         </ul>
     </div>
 
     <script src="app.js"></script>
     <script>
-        // Execution safety perimeter sweep
         verifyAccess();
 
         // --- DATABASE HOOK CONFIGURATION ---
-        // TODO: Replace these strings with your actual database keys from Supabase (Settings -> API)
         const SUPABASE_URL = 'YOUR_SUPABASE_URL';
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let supabase = null;
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
 
         let sessionUser = null;
         let profileData = null;
 
         async function checkUserSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                sessionUser = session.user;
-                const { data } = await supabase.from('profiles').select('*').eq('id', sessionUser.id).single();
-                profileData = data;
-                updateAuthDisplay();
+            if (!supabase) {
+                document.getElementById('auth-status').innerText = "Running in Local Offline Sandbox Mode.";
+                return;
             }
-            fetchLiveLeaderboard();
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    sessionUser = session.user;
+                    const { data } = await supabase.from('profiles').select('*').eq('id', sessionUser.id).single();
+                    profileData = data;
+                    unlockArcadeCabinet();
+                }
+                fetchLiveLeaderboard();
+            } catch (e) {
+                console.log("Supabase connection failed. Falling back to local mode.");
+            }
         }
         window.onload = checkUserSession;
 
-        function updateAuthDisplay() {
-            if (profileData) {
-                document.getElementById('auth-inputs').style.display = 'none';
-                document.getElementById('auth-title').innerText = "Session Active";
-                document.getElementById('auth-status').innerText = `Verified Driver: ${profileData.display_name} (@${profileData.username})`;
-            }
+        function unlockArcadeCabinet() {
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+            
+            // Set dynamic title name based on URL string
+            const name = urlParams.get('game') || 'dino';
+            document.getElementById('game-title').innerText = name.toUpperCase() + " RUNNER";
+
+            // Boot up individual game asset script file safely
+            const scriptPipeline = document.createElement('script');
+            scriptPipeline.src = `games/${name}/${name}.js`;
+            document.body.appendChild(scriptPipeline);
         }
 
         async function handleRegister() {
@@ -92,7 +183,16 @@
             const username = document.getElementById('username').value.trim();
             const displayName = document.getElementById('displayName').value.trim() || username;
 
-            if (!email || !password || !username) return alert("Missing registry targets.");
+            if (!email || !password || !username) return alert("Fill out all boxes.");
+
+            if (!supabase) {
+                // LOCAL SANDBOX BACKUP MODE
+                profileData = { username: username, display_name: displayName };
+                sessionUser = { id: 'local-user' };
+                unlockArcadeCabinet();
+                fetchLiveLeaderboard();
+                return;
+            }
 
             const { data, error } = await supabase.auth.signUp({ email, password });
             if (error) return alert(error.message);
@@ -103,7 +203,7 @@
                     username: username,
                     display_name: displayName
                 });
-                alert("Account formed! Check your email for authentication link, then log in.");
+                alert("Account formed! Log in now.");
             }
         }
 
@@ -111,16 +211,31 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
 
+            if (!supabase) {
+                // LOCAL SANDBOX BACKUP MODE
+                profileData = { username: "GuestGoose", display_name: "Player 1" };
+                sessionUser = { id: 'local-user' };
+                unlockArcadeCabinet();
+                fetchLiveLeaderboard();
+                return;
+            }
+
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) return alert(error.message);
 
             sessionUser = data.user;
             const { data: prof } = await supabase.from('profiles').select('*').eq('id', sessionUser.id).single();
             profileData = prof;
-            updateAuthDisplay();
+            unlockArcadeCabinet();
         }
 
         async function fetchLiveLeaderboard() {
+            const container = document.getElementById('leaderboard-list');
+            if (!supabase) {
+                container.innerHTML = '<li>1. Local Admin <strong>1,200 pts</strong></li><li>2. GuestGoose <strong>0 pts</strong></li>';
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('leaderboards')
                 .select('display_name, score')
@@ -129,7 +244,6 @@
 
             if (error) return console.error(error);
 
-            const container = document.getElementById('leaderboard-list');
             container.innerHTML = '';
             if(data.length === 0) container.innerHTML = '<li>No operational metrics found.</li>';
             
@@ -139,36 +253,31 @@
         }
 
         async function submitHighScore(finalScore) {
-            if (!sessionUser || !profileData) {
-                console.warn("Unauthenticated metrics rejected by local compiler.");
+            if (!profileData) return;
+            
+            if (!supabase) {
+                console.log("Local score registered:", finalScore);
                 return;
             }
 
-            const { error } = await supabase.from('leaderboards').insert({
+            await supabase.from('leaderboards').insert({
                 user_id: sessionUser.id,
                 display_name: profileData.display_name,
                 score: finalScore
             });
 
-            if (error) console.error("Database writing error:", error.message);
             fetchLiveLeaderboard(); 
         }
 
-        // --- DYNAMIC SYSTEM ARCHITECTURE ENGINE ---
         const urlParams = new URLSearchParams(window.location.search);
-        const gameToLoad = urlParams.get('game') || 'dino'; 
-
-        const scriptPipeline = document.createElement('script');
-        scriptPipeline.src = `games/${gameToLoad}/${gameToLoad}.js`;
-        document.body.appendChild(scriptPipeline);
-
-        function handleGameOver(finalScore) {
-            submitHighScore(finalScore); 
-        }
 
         function goBackToArcade() {
             const key = urlParams.get('key');
             window.location.href = `arcade.html?key=${key}`;
+        }
+
+        function handleGameOver(finalScore) {
+            submitHighScore(finalScore); 
         }
     </script>
 </body>
