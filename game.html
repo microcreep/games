@@ -78,16 +78,15 @@
         }
 
         // --- MULTI-GAME ROUTING ENGINE ---
+        // --- MULTI-GAME ROUTING ENGINE ---
         const urlParams = new URLSearchParams(window.location.search);
-        const activeGame = urlParams.get('game') || 'dino'; // Defaults to dino if empty
+        const activeGame = urlParams.get('game') || 'dino'; 
         
         const gameFrame = document.getElementById('gameFrame');
         const gameTitle = document.getElementById('game-title');
         const gameControls = document.getElementById('game-controls');
 
-        // Repository Library Layout
-        // Updated Repository Library Layout
-        // Updated Repository Library Layout with Fixed Flight Simulator
+        // Upgraded Repository Library with Full Physics Simulation Engine
         const gameLibrary = {
             dino: {
                 title: "DINO RUNNER",
@@ -95,14 +94,14 @@
                 controls: "Click inside the box and press <strong>Spacebar</strong> to start and jump."
             },
             snake: {
-                title: "RETRO SNAKE",
-                url: "https://ernanej.github.io/retro-snake-game/",
-                controls: "Use your <strong>Arrow Keys</strong> or <strong>W, A, S, D</strong> to steer the snake and eat food."
+                title: "RETRO SNAKE CABINET",
+                url: "https://achalrastogi.github.io/retro-snake-ai/",
+                controls: "Use your <strong>Arrow Keys</strong> to steer. Avoid hitting walls or your own growing tail matrix."
             },
             flight: {
-                title: "3D FLIGHT SIMULATOR",
-                url: "https://richiecarmichael.github.io/simulator/index.html", // ⬅ New fully operational URL!
-                controls: "Click inside the simulator. Use your <strong>Arrow Keys</strong> or mouse coordinates to fly over the generated terrain map."
+                title: "3D FULL-PHYSICS FLIGHT COCKPIT",
+                url: "https://phuang17.github.io/SideProjects/FlightSimulator/index.html",
+                controls: "<strong>Throttle:</strong> X to increase, Z to decrease. <strong>Pitch:</strong> Up/Down Arrows (Requires airspeed for lift!). <strong>Roll/Yaw:</strong> Left/Right Arrows."
             }
         };
 
@@ -112,7 +111,6 @@
             gameControls.innerHTML = gameLibrary[activeGame].controls;
             gameFrame.src = gameLibrary[activeGame].url;
         } else {
-            // Fallback safety if typo occurs
             gameTitle.innerText = gameLibrary.dino.title;
             gameControls.innerHTML = gameLibrary.dino.controls;
             gameFrame.src = gameLibrary.dino.url;
