@@ -24,17 +24,23 @@
     <p class="subtitle">Secure connection established. Choose your game:</p>
 
     <div class="arcade-grid">
-        <div class="game-card" onclick="launchGame('dino')">
-            <div class="game-icon">🦖</div>
-            <h3>Dino Runner</h3>
-            <p>Jump over incoming obstacles and survive the speed acceleration matrix.</p>
-        </div>
-        <div class="game-card" onclick="launchGame('snake')">
-            <div class="game-icon">🐍</div>
-            <h3>Retro Snake</h3>
-            <p>Classic arcade eating slither system. Do not run into yourself.</p>
-        </div>
+
+    <div class="game-card" onclick="launchGame('dino')">
+        <h3>🦖 Dino Runner</h3>
+        <p>Jump over obstacles and survive.</p>
     </div>
+
+    <div class="game-card" onclick="launchGame('snake')">
+        <h3>🐍 Retro Snake</h3>
+        <p>Eat blocks and grow your tail.</p>
+    </div>
+
+    <div class="game-card" onclick="launchGame('flight')">
+        <h3>✈️ Flight Simulator</h3>
+        <p>Take to the skies in a full 3D simulation.</p>
+    </div>
+
+</div>
 
     <script src="app.js"></script>
     <script>
@@ -51,10 +57,14 @@
             document.getElementById('userBadge').innerText = `Logged In As: ${user.display_name} (@${user.username})`;
         }
 
-        function launchGame(gameId) {
-            const key = new URLSearchParams(window.location.search).get('key') || getDailySecret();
-            window.location.href = `game.html?key=${key}&game=${gameId}`;
-        }
+        function launchGame(gameName) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const key = urlParams.get('key') || getDailySecret();
+    
+    // Smoothly passes both the security pass-key and the requested cabinet profile
+    window.location.href = `game.html?key=${key}&game=${gameName}`;
+}
+        
     </script>
 </body>
 </html>
