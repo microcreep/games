@@ -28,7 +28,7 @@
     </div>
 
     <div id="game-area">
-        <h2 id="game-title">DINO RUNNER</h2>
+        <h2 id="game-title">LOADING ENGINE...</h2>
         <p style="color: #a6adc8;">Controls: Click inside the canvas to start. Use <strong>Spacebar</strong> or <strong>Up Arrow</strong> to jump.</p>
         <canvas id="gameCanvas" width="800" height="250"></canvas>
     </div>
@@ -42,19 +42,14 @@
 
     <script src="app.js"></script>
     <script>
-        // Use a defensive execution layer to make sure no errors block initialization
-        try {
-            verifyAccess(); 
-        } catch(e) {
-            console.warn("Access bypass initialization.");
-        }
+        try { verifyAccess(); } catch(e) {}
 
         const urlParams = new URLSearchParams(window.location.search);
-
         const userData = localStorage.getItem('goose_user');
         let activeUser = null;
+
         if (!userData) {
-            activeUser = { display_name: "Guest Player", username: "guest" };
+            activeUser = { display_name: "Guest Player" };
             document.getElementById('playerTag').innerText = `🎮 Active: Guest Mode`;
         } else {
             activeUser = JSON.parse(userData);
@@ -71,7 +66,7 @@
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         } catch (err) {
-            console.error("Supabase load fallback:", err);
+            console.error(err);
         }
 
         async function fetchLiveLeaderboard() {
@@ -80,25 +75,24 @@
                 container.innerHTML = '<li>1. Local Admin <strong>1,500 pts</strong></li>';
                 return;
             }
-
             try {
                 const { data, error } = await supabase.from('leaderboards').select('display_name, score').order('score', { ascending: false }).limit(10);
                 if (error) throw error;
-
                 container.innerHTML = '';
                 if(!data || data.length === 0) {
-                    container.innerHTML = '<li>No public entries recorded yet. Be the first!</li>';
+                    container.innerHTML = '<li>No records yet. Score first!</li>';
                     return;
                 }
                 data.forEach((row, i) => {
                     container.innerHTML += `<li><span>${i + 1}. ${row.display_name}</span> <strong>${row.score} pts</strong></li>`;
                 });
             } catch(e) {
-                container.innerHTML = '<li>1. Local Admin <strong>1,500 pts</strong></li><li>2. Sandbox Connected <strong>0 pts</strong></li>';
+                container.innerHTML = '<li>1. Local Admin <strong>1,500 pts</strong></li>';
             }
         }
 
-        async function submitHighScore(finalScore) {
+        // Exposed globally so separate game files can execute highscore updates
+        window.submitHighScore = async function(finalScore) {
             if (!activeUser || !supabase) return;
             try {
                 const { data: { session } } = await supabase.auth.getSession();
@@ -111,7 +105,7 @@
                 });
                 fetchLiveLeaderboard();
             } catch(err) {
-                console.error("Score entry tracking failure:", err);
+                console.error("Score submit error:", err);
             }
         }
 
@@ -120,147 +114,14 @@
             window.location.href = `arcade.html?key=${key}`;
         }
 
-        // --- BUILT-IN DINO CANVAS ENGINE ---
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        // Pull and run the requested module file path smoothly
+        const activeGame = urlParams.get('game') || 'dino';
+        document.getElementById('game-title').innerText = activeGame.toUpperCase() + " RUNNER";
 
-        let score = 0;
-        let gameTime = 0;
-        let isPlaying = false;
-        let obstacles = [];
-        let gameSpeed = 6;
+        const scriptPipeline = document.createElement('script');
+        scriptPipeline.src = `games/${activeGame}/${activeGame}.js`;
+        document.body.appendChild(scriptPipeline);
 
-        const dino = { 
-            x: 80, 
-            y: 180, 
-            width: 25, 
-            height: 45, 
-            gravity: 0.7, 
-            velocity: 0, 
-            jumpForce: -13, 
-            isGrounded: true 
-        };
-
-        window.addEventListener("keydown", (e) => {
-            if ((e.code === "Space" || e.code === "ArrowUp")) {
-                if (!isPlaying) {
-                    resetGame();
-                } else if (dino.isGrounded) {
-                    dino.velocity = dino.jumpForce;
-                    dino.isGrounded = false;
-                }
-                // Prevent spacebar from scrolling the webpage layout down
-                e.preventDefault();
-            }
-        });
-
-        canvas.addEventListener("click", () => { 
-            if (!isPlaying) resetGame(); 
-        });
-
-        function spawnObstacle() {
-            let sizeHeight = Math.random() * (50 - 25) + 25;
-            obstacles.push({ 
-                x: canvas.width, 
-                y: 225 - sizeHeight, 
-                width: 20, 
-                height: sizeHeight 
-            });
-        }
-
-        function resetGame() {
-            score = 0; 
-            obstacles = []; 
-            gameSpeed = 6; 
-            dino.y = 180; 
-            dino.velocity = 0; 
-            dino.isGrounded = true; 
-            isPlaying = true;
-            gameLoop();
-        }
-
-        function gameLoop() {
-            if (!isPlaying) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Floor Line
-            ctx.strokeStyle = "#cdd6f4"; 
-            ctx.lineWidth = 3;
-            ctx.beginPath(); 
-            ctx.moveTo(0, 225); 
-            ctx.lineTo(canvas.width, 225); 
-            ctx.stroke();
-
-            // Physics Calculations
-            dino.velocity += dino.gravity; 
-            dino.y += dino.velocity;
-            
-            if (dino.y >= 180) { 
-                dino.y = 180; 
-                dino.velocity = 0; 
-                dino.isGrounded = true; 
-            }
-            
-            // Draw Player Character (Pink Square)
-            ctx.fillStyle = "#f38ba8"; 
-            ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
-
-            gameTime++;
-            if (gameTime % 90 === 0) { 
-                spawnObstacle(); 
-                gameSpeed += 0.25; 
-            }
-
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                let obs = obstacles[i]; 
-                obs.x -= gameSpeed;
-                
-                // Draw Obstacles (Green Bars)
-                ctx.fillStyle = "#a6e3a1"; 
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-
-                // Collision Logic
-                if (dino.x < obs.x + obs.width && dino.x + dino.width > obs.x && dino.y < obs.y + obs.height && dino.y + dino.height > obs.y) {
-                    isPlaying = false;
-                    
-                    // Darken screen on death
-                    ctx.fillStyle = "rgba(0, 0, 0, 0.75)"; 
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    ctx.fillStyle = "#f38ba8"; 
-                    ctx.font = "bold 32px sans-serif"; 
-                    ctx.fillText("GAME OVER", canvas.width / 2 - 100, canvas.height / 2);
-                    
-                    ctx.fillStyle = "#cdd6f4";
-                    ctx.font = "16px sans-serif";
-                    ctx.fillText("Click Canvas or Spacebar to Try Again", canvas.width / 2 - 130, canvas.height / 2 + 40);
-                    
-                    submitHighScore(score);
-                    return;
-                }
-                
-                if (obs.x + obs.width < 0) { 
-                    obstacles.splice(i, 1); 
-                    score += 10; 
-                }
-            }
-
-            // Draw Score Counter
-            ctx.fillStyle = "#ffffff"; 
-            ctx.font = "bold 22px monospace"; 
-            ctx.fillText(`SCORE: ${score}`, 25, 40);
-            
-            requestAnimationFrame(gameLoop);
-        }
-
-        function renderSplash() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#a6e3a1";
-            ctx.font = "bold 24px sans-serif";
-            ctx.fillText("CLICK CANVAS TO START GAME", canvas.width / 2 - 180, canvas.height / 2 + 10);
-        }
-
-        renderSplash();
         fetchLiveLeaderboard();
     </script>
 </body>

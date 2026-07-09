@@ -1,8 +1,6 @@
-// Self-contained game execution environment to safely target host DOM elements
 (function() {
     const canvas = document.getElementById("gameCanvas");
-    if (!canvas) return console.error("Target pipeline frame asset unavailable.");
-    
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
     let score = 0;
@@ -23,9 +21,14 @@
     };
 
     window.addEventListener("keydown", (e) => {
-        if ((e.code === "Space" || e.code === "ArrowUp") && dino.isGrounded && isPlaying) {
-            dino.velocity = dino.jumpForce;
-            dino.isGrounded = false;
+        if (e.code === "Space" || e.code === "ArrowUp") {
+            if (!isPlaying) {
+                resetGame();
+            } else if (dino.isGrounded) {
+                dino.velocity = dino.jumpForce;
+                dino.isGrounded = false;
+            }
+            e.preventDefault();
         }
     });
 
@@ -58,7 +61,7 @@
         if (!isPlaying) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Ground Line Design
+        // Ground Floor Draw
         ctx.strokeStyle = "#cdd6f4"; 
         ctx.lineWidth = 3;
         ctx.beginPath(); 
@@ -66,7 +69,7 @@
         ctx.lineTo(canvas.width, 225); 
         ctx.stroke();
 
-        // Physics execution 
+        // Physics Execution Engine
         dino.velocity += dino.gravity; 
         dino.y += dino.velocity;
         
@@ -76,27 +79,28 @@
             dino.isGrounded = true; 
         }
         
-        // Draw Player Dino
+        // Draw Player character block
         ctx.fillStyle = "#f38ba8"; 
         ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
 
         gameTime++;
-        if (gameTime % 80 === 0) { 
+        if (gameTime % 90 === 0) { 
             spawnObstacle(); 
-            gameSpeed += 0.3; 
+            gameSpeed += 0.25; 
         }
 
         for (let i = obstacles.length - 1; i >= 0; i--) {
             let obs = obstacles[i]; 
             obs.x -= gameSpeed;
             
-            // Draw Cacti
+            // Draw Obstacles
             ctx.fillStyle = "#a6e3a1"; 
             ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
-            // Collision detection matrix
+            // Collision Calculations
             if (dino.x < obs.x + obs.width && dino.x + dino.width > obs.x && dino.y < obs.y + obs.height && dino.y + dino.height > obs.y) {
                 isPlaying = false;
+                
                 ctx.fillStyle = "rgba(0, 0, 0, 0.75)"; 
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
@@ -106,9 +110,9 @@
                 
                 ctx.fillStyle = "#cdd6f4";
                 ctx.font = "16px sans-serif";
-                ctx.fillText("Click Canvas to Try Again", canvas.width / 2 - 90, canvas.height / 2 + 40);
+                ctx.fillText("Click Canvas or Spacebar to Try Again", canvas.width / 2 - 130, canvas.height / 2 + 40);
                 
-                // Fire score tracking safely into the window scope parent method
+                // Track back to the parent file execution hook to update high score records
                 if (typeof window.submitHighScore === "function") {
                     window.submitHighScore(score);
                 }
@@ -121,7 +125,7 @@
             }
         }
 
-        // Score Readout text
+        // Live score display output
         ctx.fillStyle = "#ffffff"; 
         ctx.font = "bold 22px monospace"; 
         ctx.fillText(`SCORE: ${score}`, 25, 40);
@@ -133,7 +137,7 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#a6e3a1";
         ctx.font = "bold 24px sans-serif";
-        ctx.fillText("CLICK BOX TO START RUNNING", canvas.width / 2 - 180, canvas.height / 2 + 10);
+        ctx.fillText("CLICK CANVAS TO START GAME", canvas.width / 2 - 180, canvas.height / 2 + 10);
     }
 
     renderSplash();
