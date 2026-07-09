@@ -33,17 +33,32 @@
 
     <script src="app.js"></script>
     <script>
-        verifyAccess(); // Verify daily key
-        
-        // --- DATABASE SETUP & FAIL-SAFE ---
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        let supabase = null;
+        // Force 24hr access validation
+        verifyAccess(); 
 
-        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // --- CONNECTIVITY KEYS ---
+        // Replace these when you are ready to link Supabase live!
+        const SUPABASE_URL = 'https://xkyvyyjlexeadaqgexgw.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_ZytZF6HwieXZuAKcMNX_vQ_IjX8gduC';
+        
+        let dbClient = null;
+        let isLocalSandbox = true;
+
+        // Secure initialization wrapper
+        try {
+            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+                // Rename global reference variable to prevent namespace freezing collisions
+                dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                isLocalSandbox = false;
+                console.log("Connected to live database platform.");
+            } else {
+                console.log("Running in Local Cache Sandbox mode.");
+            }
+        } catch (err) {
+            console.error("Database connection failed, crashing down safely to sandbox mode:", err);
         }
 
+        // Forward token packet directly to main directory grid
         function grantAccess(profile) {
             localStorage.setItem('goose_user', JSON.stringify(profile));
             const key = new URLSearchParams(window.location.search).get('key');
@@ -56,20 +71,29 @@
             const username = document.getElementById('username').value.trim();
             const displayName = document.getElementById('displayName').value.trim() || username;
 
-            if (!email || !password || !username) return alert("Please fill out email, password, and username.");
-
-            if (!supabase) {
-                alert("Sandbox Mode: Saving profile locally to your browser!");
-                grantAccess({ username, display_name: displayName, local: true });
+            if (!email || !password || !username) {
+                alert("Please fill out email, password, and username fields.");
                 return;
             }
 
-            const { data, error } = await supabase.auth.signUp({ email, password });
-            if (error) return alert(error.message);
+            if (isLocalSandbox) {
+                alert("Sandbox Mode Active! Access Granted. Storing account inside your browser cache.");
+                grantAccess({ username: username, display_name: displayName, local: true });
+                return;
+            }
 
-            if (data.user) {
-                await supabase.from('profiles').insert({ id: data.user.id, username, display_name: displayName });
-                alert("Account created! Please Sign In now.");
+            // Database Live Insertion Protocol
+            try {
+                const { data, error } = await dbClient.auth.signUp({ email, password });
+                if (error) return alert(error.message);
+
+                if (data.user) {
+                    await dbClient.from('profiles').insert({ id: data.user.id, username, display_name: displayName });
+                    alert("Database Account Formed! Click Sign In to enter.");
+                }
+            } catch (fail) {
+                alert("Critical Database Connection Failure: Check console logs.");
+                console.error(fail);
             }
         }
 
@@ -77,19 +101,28 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
 
-            if (!email || !password) return alert("Please fill out email and password.");
+            if (!email || !password) {
+                alert("Please fill out both email and password blocks.");
+                return;
+            }
 
-            if (!supabase) {
-                alert("Sandbox Mode: Direct entry authorized.");
+            if (isLocalSandbox) {
+                alert("Sandbox Mode Bypass: Sign In Authorized.");
                 grantAccess({ username: "GuestGoose", display_name: "Player One", local: true });
                 return;
             }
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) return alert(error.message);
+            // Database Live Session Retrieval
+            try {
+                const { data, error } = await dbClient.auth.signInWithPassword({ email, password });
+                if (error) return alert(error.message);
 
-            const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-            grantAccess(prof);
+                const { data: prof } = await dbClient.from('profiles').select('*').eq('id', data.user.id).single();
+                grantAccess(prof);
+            } catch (fail) {
+                alert("Database authentication failed to process.");
+                console.error(fail);
+            }
         }
     </script>
 </body>
