@@ -1,10 +1,8 @@
-// Self-executing setup to avoid loading conflicts
+// Self-contained game execution environment to safely target host DOM elements
 (function() {
     const canvas = document.getElementById("gameCanvas");
-    if (!canvas) {
-        console.error("Game canvas element not found!");
-        return;
-    }
+    if (!canvas) return console.error("Target pipeline frame asset unavailable.");
+    
     const ctx = canvas.getContext("2d");
 
     let score = 0;
@@ -60,15 +58,15 @@
         if (!isPlaying) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Ground Floor Line
-        ctx.strokeStyle = "#585b70"; 
+        // Ground Line Design
+        ctx.strokeStyle = "#cdd6f4"; 
         ctx.lineWidth = 3;
         ctx.beginPath(); 
         ctx.moveTo(0, 225); 
         ctx.lineTo(canvas.width, 225); 
         ctx.stroke();
 
-        // Physics
+        // Physics execution 
         dino.velocity += dino.gravity; 
         dino.y += dino.velocity;
         
@@ -78,7 +76,7 @@
             dino.isGrounded = true; 
         }
         
-        // Draw Dino
+        // Draw Player Dino
         ctx.fillStyle = "#f38ba8"; 
         ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
 
@@ -92,14 +90,14 @@
             let obs = obstacles[i]; 
             obs.x -= gameSpeed;
             
-            // Draw Obstacles
+            // Draw Cacti
             ctx.fillStyle = "#a6e3a1"; 
             ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
-            // Collision Check
+            // Collision detection matrix
             if (dino.x < obs.x + obs.width && dino.x + dino.width > obs.x && dino.y < obs.y + obs.height && dino.y + dino.height > obs.y) {
                 isPlaying = false;
-                ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; 
+                ctx.fillStyle = "rgba(0, 0, 0, 0.75)"; 
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
                 ctx.fillStyle = "#f38ba8"; 
@@ -110,8 +108,9 @@
                 ctx.font = "16px sans-serif";
                 ctx.fillText("Click Canvas to Try Again", canvas.width / 2 - 90, canvas.height / 2 + 40);
                 
-                if (typeof handleGameOver === 'function') {
-                    handleGameOver(score);
+                // Fire score tracking safely into the window scope parent method
+                if (typeof window.submitHighScore === "function") {
+                    window.submitHighScore(score);
                 }
                 return;
             }
@@ -122,20 +121,20 @@
             }
         }
 
-        // Render Score Overlay
-        ctx.fillStyle = "#1e1e2e"; 
-        ctx.font = "bold 20px monospace"; 
+        // Score Readout text
+        ctx.fillStyle = "#ffffff"; 
+        ctx.font = "bold 22px monospace"; 
         ctx.fillText(`SCORE: ${score}`, 25, 40);
         
         requestAnimationFrame(gameLoop);
     }
 
-    // Instantly draw initial click-to-play interface state so it isn't blank
     function renderSplash() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#313244";
+        ctx.fillStyle = "#a6e3a1";
         ctx.font = "bold 24px sans-serif";
         ctx.fillText("CLICK BOX TO START RUNNING", canvas.width / 2 - 180, canvas.height / 2 + 10);
     }
+
     renderSplash();
 })();
