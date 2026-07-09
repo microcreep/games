@@ -10,8 +10,8 @@
         .back-btn { padding: 10px 20px; background: #f38ba8; border: none; border-radius: 6px; cursor: pointer; color: #11111b; font-weight: bold; font-size: 14px; }
         .player-tag { font-size: 14px; color: #fab387; font-weight: bold; background: #313244; padding: 8px 14px; border-radius: 20px; }
         
-        #game-area { max-width: 1000px; margin: 0 auto; }
-        canvas { background: #252636; display: block; margin: 20px auto; border-radius: 8px; border: 4px solid #cdd6f4; box-shadow: 0 8px 24px rgba(0,0,0,0.5); width: 100%; max-width: 900px; height: auto; cursor: pointer; }
+        #game-area { max-width: 900px; margin: 0 auto; }
+        iframe { display: block; margin: 20px auto; border-radius: 8px; border: 4px solid #cdd6f4; box-shadow: 0 8px 24px rgba(0,0,0,0.5); width: 100%; height: 450px; background: #fff; }
 
         .leaderboard-box { margin: 40px auto; background: #313244; padding: 20px; border-radius: 10px; max-width: 400px; text-align: left; }
         .leaderboard-box h3 { text-align: center; margin-top: 0; color: #f5e0dc; border-bottom: 2px solid #45475a; padding-bottom: 10px; }
@@ -28,9 +28,10 @@
     </div>
 
     <div id="game-area">
-        <h2 id="game-title">LOADING ENGINE...</h2>
-        <p style="color: #a6adc8;">Controls: Click inside the canvas to start. Use <strong>Spacebar</strong> or <strong>Up Arrow</strong> to jump.</p>
-        <canvas id="gameCanvas" width="800" height="250"></canvas>
+        <h2 id="game-title">DINO RUNNER</h2>
+        <p style="color: #a6adc8;">Controls: Click inside the game box and press <strong>Spacebar</strong> to jump / start.</p>
+        
+        <iframe src="https://wayou.github.io/t-rex-runner/" id="gameFrame"></iframe>
     </div>
 
     <div class="leaderboard-box">
@@ -55,26 +56,23 @@
             document.getElementById('playerTag').innerText = `🎮 Active: ${activeUser.display_name}`;
         }
 
-        // Live Supabase Production Configuration with Safety Wrappers
+        // Live Supabase Production Configuration
         const SUPABASE_URL = 'https://xkyvyyjlexeadaqgexgw.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_ZytZF6HwieXZuAKcMNX_vQ_IjX8gduC';
         let supabase = null;
 
         try {
-            if (window.supabase && typeof window.supabase.createClient === 'function') {
+            if (window.supabase) {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log("Supabase Client initialized safely.");
-            } else {
-                console.warn("Supabase CDN script unavailable. Falling back to sandbox.");
             }
         } catch (err) {
-            console.error("Failed to initialize Supabase:", err);
+            console.error(err);
         }
 
         async function fetchLiveLeaderboard() {
             const container = document.getElementById('leaderboard-list');
             if (!supabase) {
-                container.innerHTML = '<li>1. Local Admin <strong>1,500 pts</strong></li><li>2. ' + (activeUser ? activeUser.display_name : 'Player') + ' <strong>0 pts</strong></li>';
+                container.innerHTML = '<li>1. Local Admin <strong>1,500 pts</strong></li>';
                 return;
             }
 
@@ -84,33 +82,14 @@
 
                 container.innerHTML = '';
                 if(!data || data.length === 0) {
-                    container.innerHTML = '<li>No public entries recorded yet. Be the first!</li>';
+                    container.innerHTML = '<li>No public entries recorded yet!</li>';
                     return;
                 }
                 data.forEach((row, i) => {
                     container.innerHTML += `<li><span>${i + 1}. ${row.display_name}</span> <strong>${row.score} pts</strong></li>`;
                 });
             } catch(e) {
-                container.innerHTML = '<li>Local Mode active (Cannot reach leaderboards)</li>';
-                console.error(e);
-            }
-        }
-
-        async function submitHighScore(finalScore) {
-            if (!activeUser || !supabase) return;
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) return;
-
-                const { error } = await supabase.from('leaderboards').insert({
-                    user_id: session.user.id,
-                    display_name: activeUser.display_name,
-                    score: finalScore
-                });
-                if (error) throw error;
-                fetchLiveLeaderboard();
-            } catch(err) {
-                console.error("Score submit tracking error:", err.message);
+                container.innerHTML = '<li>Local Sandbox Active</li>';
             }
         }
 
@@ -119,23 +98,7 @@
             window.location.href = `arcade.html?key=${key}`;
         }
 
-        // --- DYNAMIC SCRIPT INJECTION MATRIX ---
-        // This is now isolated from the database setup so it cannot be blocked!
-        const activeGame = urlParams.get('game') || 'dino';
-        document.getElementById('game-title').innerText = activeGame.toUpperCase() + " RUNNER";
-
-        const scriptPipeline = document.createElement('script');
-        scriptPipeline.src = `games/${activeGame}/${activeGame}.js`;
-        
-        // Handle errors if file cannot be found in paths
-        scriptPipeline.onerror = function() {
-            console.error(`Failed to load game script at: ${scriptPipeline.src}`);
-            alert(`Could not load the game file structure for "${activeGame}". Check folder layout capitalization!`);
-        };
-
-        document.body.appendChild(scriptPipeline);
-
-        // Run leaderboard setup
+        // Run leaderboard display setup
         fetchLiveLeaderboard();
     </script>
 </body>
