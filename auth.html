@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goose Arcade - Identity Portal</title>
+    <style>
+        body { background: #1e1e2e; color: #fff; font-family: sans-serif; text-align: center; padding-top: 60px; margin: 0; }
+        .auth-box { margin: 0 auto; background: #313244; padding: 30px; border-radius: 12px; max-width: 400px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        h2 { color: #a6e3a1; margin-top: 0; }
+        input { padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #45475a; background: #1e1e2e; color: #fff; width: 90%; font-size: 14px; }
+        .btn { padding: 12px 20px; background: #a6e3a1; border: none; border-radius: 6px; cursor: pointer; color: #11111b; font-weight: bold; margin: 8px 4px; width: 45%; font-size: 14px; }
+        .btn-reg { background: #b4befe; }
+        p { color: #a6adc8; font-size: 14px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="auth-box">
+        <h2>Arcade Authentication</h2>
+        <p>Establish a player profile to unlock live score recording.</p>
+        
+        <input type="email" id="email" placeholder="Email Address">
+        <input type="password" id="password" placeholder="Password">
+        <input type="text" id="username" placeholder="Unique Username (e.g., goose99)">
+        <input type="text" id="displayName" placeholder="Public Display Name">
+        <br>
+        
+        <button class="btn btn-reg" onclick="handleRegister()">Sign Up</button>
+        <button class="btn" onclick="handleLogin()">Sign In</button>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        verifyAccess(); // Verify daily key
+        
+        // --- DATABASE SETUP & FAIL-SAFE ---
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        let supabase = null;
+
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        function grantAccess(profile) {
+            localStorage.setItem('goose_user', JSON.stringify(profile));
+            const key = new URLSearchParams(window.location.search).get('key');
+            window.location.href = `arcade.html?key=${key}`;
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const displayName = document.getElementById('displayName').value.trim() || username;
+
+            if (!email || !password || !username) return alert("Please fill out email, password, and username.");
+
+            if (!supabase) {
+                alert("Sandbox Mode: Saving profile locally to your browser!");
+                grantAccess({ username, display_name: displayName, local: true });
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) return alert(error.message);
+
+            if (data.user) {
+                await supabase.from('profiles').insert({ id: data.user.id, username, display_name: displayName });
+                alert("Account created! Please Sign In now.");
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!email || !password) return alert("Please fill out email and password.");
+
+            if (!supabase) {
+                alert("Sandbox Mode: Direct entry authorized.");
+                grantAccess({ username: "GuestGoose", display_name: "Player One", local: true });
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) return alert(error.message);
+
+            const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+            grantAccess(prof);
+        }
+    </script>
+</body>
+</html>

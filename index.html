@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Daily Goose Hunt</title>
     <style>
-        body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        input, button { padding: 10px; font-size: 16px; margin: 5px; }
-        .hint { color: #ffca28; font-style: italic; }
+        body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding-top: 100px; margin: 0; }
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        input { padding: 12px; font-size: 16px; margin: 10px 0; width: 80%; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; }
+        button { padding: 12px 24px; font-size: 16px; background: #a6e3a1; border: none; border-radius: 6px; cursor: pointer; color: #11111b; font-weight: bold; width: 85%; }
+        button:hover { background: #94e2d5; }
+        .hint { color: #fab387; font-style: italic; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>The Goose Has Flown... 🪿</h1>
-    <p>The game moves every 24 hours. Enter today's secret phrase to find it:</p>
-    
-    <p class="hint">Hint: Today's date in YYYY-MM-DD format (e.g., 2026-07-09)</p>
-
-    <input type="text" id="secretInput" placeholder="Enter secret phrase">
-    <button onclick="checkSecret()">Hunt</button>
-
+    <div class="container">
+        <h1>The Goose Has Flown... 🪿</h1>
+        <p>The arcade moves location every 24 hours. Track it down by entering today's secret phrase:</p>
+        <input type="text" id="secretInput" placeholder="Enter daily code here...">
+        <br>
+        <button onclick="checkSecret()">Join the Hunt</button>
+        <p class="hint">Clue: Today's date code format is YYYY-MM-DD (e.g., 2026-07-09)</p>
+    </div>
     <script src="app.js"></script>
 </body>
 </html>
