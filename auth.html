@@ -6,7 +6,7 @@
     <title>Goose Arcade - Identity Portal</title>
     <style>
         body { background: #1e1e2e; color: #fff; font-family: sans-serif; text-align: center; padding-top: 60px; margin: 0; }
-        .auth-box { margin: 0 auto; background: #313244; padding: 30px; border-radius: 12px; max-width: 400px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .auth-box { margin: 0 auto; background: #313244; padding: 30px; border-radius: 12px; max-width: 400px; box-shadow: 0 8px 20 rgba(0,0,0,0.3); }
         h2 { color: #a6e3a1; margin-top: 0; }
         input { padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #45475a; background: #1e1e2e; color: #fff; width: 90%; font-size: 14px; }
         .btn { padding: 12px 20px; background: #a6e3a1; border: none; border-radius: 6px; cursor: pointer; color: #11111b; font-weight: bold; margin: 8px 4px; width: 45%; font-size: 14px; }
@@ -33,32 +33,14 @@
 
     <script src="app.js"></script>
     <script>
-        // Force 24hr access validation
         verifyAccess(); 
 
-        // --- CONNECTIVITY KEYS ---
-        // Replace these when you are ready to link Supabase live!
+        // Live Supabase Production Configuration
         const SUPABASE_URL = 'https://xkyvyyjlexeadaqgexgw.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_ZytZF6HwieXZuAKcMNX_vQ_IjX8gduC';
         
-        let dbClient = null;
-        let isLocalSandbox = true;
+        const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Secure initialization wrapper
-        try {
-            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
-                // Rename global reference variable to prevent namespace freezing collisions
-                dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                isLocalSandbox = false;
-                console.log("Connected to live database platform.");
-            } else {
-                console.log("Running in Local Cache Sandbox mode.");
-            }
-        } catch (err) {
-            console.error("Database connection failed, crashing down safely to sandbox mode:", err);
-        }
-
-        // Forward token packet directly to main directory grid
         function grantAccess(profile) {
             localStorage.setItem('goose_user', JSON.stringify(profile));
             const key = new URLSearchParams(window.location.search).get('key');
@@ -76,23 +58,24 @@
                 return;
             }
 
-            if (isLocalSandbox) {
-                alert("Sandbox Mode Active! Access Granted. Storing account inside your browser cache.");
-                grantAccess({ username: username, display_name: displayName, local: true });
-                return;
-            }
-
-            // Database Live Insertion Protocol
             try {
                 const { data, error } = await dbClient.auth.signUp({ email, password });
                 if (error) return alert(error.message);
 
                 if (data.user) {
-                    await dbClient.from('profiles').insert({ id: data.user.id, username, display_name: displayName });
-                    alert("Database Account Formed! Click Sign In to enter.");
+                    // Save custom user profile properties directly to the public database table
+                    const { error: profileError } = await dbClient.from('profiles').insert({ 
+                        id: data.user.id, 
+                        username: username, 
+                        display_name: displayName 
+                    });
+                    
+                    if (profileError) return alert("Profile creation failed: " + profileError.message);
+                    
+                    alert("Account Formed! You can now log in using your credentials.");
                 }
             } catch (fail) {
-                alert("Critical Database Connection Failure: Check console logs.");
+                alert("Database Connection Failure. View developer console logs.");
                 console.error(fail);
             }
         }
@@ -106,18 +89,14 @@
                 return;
             }
 
-            if (isLocalSandbox) {
-                alert("Sandbox Mode Bypass: Sign In Authorized.");
-                grantAccess({ username: "GuestGoose", display_name: "Player One", local: true });
-                return;
-            }
-
-            // Database Live Session Retrieval
             try {
                 const { data, error } = await dbClient.auth.signInWithPassword({ email, password });
                 if (error) return alert(error.message);
 
-                const { data: prof } = await dbClient.from('profiles').select('*').eq('id', data.user.id).single();
+                // Fetch matching metadata profile matching this auth account ID
+                const { data: prof, error: profErr } = await dbClient.from('profiles').select('*').eq('id', data.user.id).single();
+                if (profErr) return alert("Could not fetch user profile details.");
+                
                 grantAccess(prof);
             } catch (fail) {
                 alert("Database authentication failed to process.");

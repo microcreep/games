@@ -42,11 +42,10 @@
 
     <script src="app.js"></script>
     <script>
-        verifyAccess(); // Security verification loop
+        verifyAccess(); 
 
         const urlParams = new URLSearchParams(window.location.search);
 
-        // Fetch local user session
         const userData = localStorage.getItem('goose_user');
         let activeUser = null;
         if (!userData) {
@@ -56,60 +55,52 @@
             document.getElementById('playerTag').innerText = `🎮 Active: ${activeUser.display_name}`;
         }
 
-        // --- DATABASE SYNC HOOKS ---
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        let supabase = null;
-        
-        try {
-            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch(err) {
-            console.log("Supabase setup skipped, using local data storage.");
-        }
+        // Live Supabase Production Configuration
+        const SUPABASE_URL = 'https://xkyvyyjlexeadaqgexgw.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_ZytZF6HwieXZuAKcMNX_vQ_IjX8gduC';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function fetchLiveLeaderboard() {
             const container = document.getElementById('leaderboard-list');
-            if (!supabase) {
-                container.innerHTML = '<li>1. Local Admin <strong>1,500 pts</strong></li><li>2. ' + activeUser.display_name + ' <strong>0 pts</strong></li>';
-                return;
-            }
 
             try {
-                const { data } = await supabase.from('leaderboards').select('display_name, score').order('score', { ascending: false }).limit(10);
+                const { data, error } = await supabase.from('leaderboards').select('display_name, score').order('score', { ascending: false }).limit(10);
+                if (error) throw error;
+
                 container.innerHTML = '';
                 if(!data || data.length === 0) {
-                    container.innerHTML = '<li>No public records yet!</li>';
+                    container.innerHTML = '<li>No public entries recorded yet. Be the first!</li>';
                     return;
                 }
                 data.forEach((row, i) => {
                     container.innerHTML += `<li><span>${i + 1}. ${row.display_name}</span> <strong>${row.score} pts</strong></li>`;
                 });
             } catch(e) {
-                container.innerHTML = '<li>Error loading live stats.</li>';
+                container.innerHTML = '<li>Error sync-loading live metrics.</li>';
+                console.error(e);
             }
         }
 
         async function submitHighScore(finalScore) {
             if (!activeUser) return;
-            if (!supabase || activeUser.local) {
-                console.log("Score safely cached locally:", finalScore);
-                return;
-            }
 
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    await supabase.from('leaderboards').insert({
-                        user_id: session.user.id,
-                        display_name: activeUser.display_name,
-                        score: finalScore
-                    });
-                    fetchLiveLeaderboard();
+                if (!session) {
+                    console.warn("Session expired or missing. Highscore not submitted.");
+                    return;
                 }
+
+                const { error } = await supabase.from('leaderboards').insert({
+                    user_id: session.user.id,
+                    display_name: activeUser.display_name,
+                    score: finalScore
+                });
+                
+                if (error) throw error;
+                fetchLiveLeaderboard();
             } catch(err) {
-                console.error("Score submit error:", err);
+                console.error("Score submit tracking error:", err.message);
             }
         }
 
@@ -175,7 +166,7 @@
             if (!isPlaying) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Ground Line
+            // Ground line build
             ctx.strokeStyle = "#585b70"; 
             ctx.lineWidth = 3;
             ctx.beginPath(); 
@@ -183,7 +174,7 @@
             ctx.lineTo(canvas.width, 225); 
             ctx.stroke();
 
-            // Physics Update
+            // Physics execution 
             dino.velocity += dino.gravity; 
             dino.y += dino.velocity;
             
@@ -211,7 +202,7 @@
                 ctx.fillStyle = "#a6e3a1"; 
                 ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
-                // Collision Detection Box matrix
+                // Collision computation
                 if (dino.x < obs.x + obs.width && dino.x + dino.width > obs.x && dino.y < obs.y + obs.height && dino.y + dino.height > obs.y) {
                     isPlaying = false;
                     ctx.fillStyle = "rgba(0, 0, 0, 0.6)"; 
@@ -235,7 +226,7 @@
                 }
             }
 
-            // Score Display
+            // UI HUD Output
             ctx.fillStyle = "#1e1e2e"; 
             ctx.font = "bold 20px monospace"; 
             ctx.fillText(`SCORE: ${score}`, 25, 40);
@@ -243,7 +234,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Draw Splash Frame on system entry
         function renderSplash() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#313244";
@@ -251,7 +241,6 @@
             ctx.fillText("CLICK BOX TO START RUNNING", canvas.width / 2 - 180, canvas.height / 2 + 10);
         }
 
-        // Initialize display arrays
         renderSplash();
         fetchLiveLeaderboard();
     </script>
