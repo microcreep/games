@@ -17,6 +17,9 @@
         .leaderboard-box h3 { text-align: center; margin-top: 0; color: #f5e0dc; border-bottom: 2px solid #45475a; padding-bottom: 10px; }
         ul { list-style: none; padding: 0; margin: 0; }
         li { padding: 8px 0; border-bottom: 1px solid #45475a; display: flex; justify-content: space-between; }
+        
+        /* Debug console banner style */
+        #debug-log { background: #f38ba8; color: #11111b; padding: 10px; border-radius: 6px; max-width: 600px; margin: 10px auto; font-family: monospace; display: none; font-weight: bold; text-align: left; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -29,6 +32,7 @@
 
     <div id="game-area">
         <h2 id="game-title">LOADING ENGINE...</h2>
+        <div id="debug-log"></div>
         <p style="color: #a6adc8;">Controls: Click inside the canvas to start. Use <strong>Spacebar</strong> or <strong>Up Arrow</strong> to jump.</p>
         <canvas id="gameCanvas" width="800" height="250"></canvas>
     </div>
@@ -42,6 +46,13 @@
 
     <script src="app.js"></script>
     <script>
+        // Catch any unhandled window errors and show them directly on screen
+        window.onerror = function(message, source, lineno) {
+            const debugBox = document.getElementById('debug-log');
+            debugBox.style.display = 'block';
+            debugBox.innerHTML += `<div>❌ Script Error: ${message} on line ${lineno}</div>`;
+        };
+
         try { verifyAccess(); } catch(e) {}
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -91,7 +102,6 @@
             }
         }
 
-        // Exposed globally so separate game files can execute highscore updates
         window.submitHighScore = async function(finalScore) {
             if (!activeUser || !supabase) return;
             try {
@@ -114,14 +124,23 @@
             window.location.href = `arcade.html?key=${key}`;
         }
 
-        // Pull and run the requested module file path smoothly
+        // --- DYNAMIC INJECTION PIPELINE ---
         const activeGame = urlParams.get('game') || 'dino';
         document.getElementById('game-title').innerText = activeGame.toUpperCase() + " RUNNER";
 
         const scriptPipeline = document.createElement('script');
-        scriptPipeline.src = `games/${activeGame}/${activeGame}.js`;
-        document.body.appendChild(scriptPipeline);
+        
+        // Try absolute root path layout first
+        const targetPath = `./games/${activeGame}/${activeGame}.js`;
+        scriptPipeline.src = targetPath;
+        
+        scriptPipeline.onerror = function() {
+            const debugBox = document.getElementById('debug-log');
+            debugBox.style.display = 'block';
+            debugBox.innerHTML += `<div>⚠️ File Missing: Could not find or read script file at path: "${targetPath}". Make sure your folder structure on the left matches this EXACTLY, including matching lowercase letters!</div>`;
+        };
 
+        document.body.appendChild(scriptPipeline);
         fetchLiveLeaderboard();
     </script>
 </body>
