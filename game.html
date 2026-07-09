@@ -104,12 +104,13 @@
         }
 
         // --- DYNAMIC SCRIPT INJECTION MATRIX ---
+        // --- DYNAMIC SCRIPT INJECTION MATRIX ---
         const activeGame = urlParams.get('game') || 'dino';
         document.getElementById('game-title').innerText = activeGame.toUpperCase() + " RUNNER";
 
-        // Create script tag and pull the clean separate file path
+        // Adding the leading slash forces the browser to look from the root directory
         const scriptPipeline = document.createElement('script');
-        scriptPipeline.src = `games/${activeGame}/${activeGame}.js`;
+        scriptPipeline.src = `/games/${activeGame}/${activeGame}.js`; 
         document.body.appendChild(scriptPipeline);
 
         // Run leaderboard setup
