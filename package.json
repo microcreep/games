@@ -1,0 +1,13 @@
+{
+  "name": "games",
+  "version": "1.0.0",
+  "description": "The Daily Goose Hunt - Arcade Games",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Static HTML project - no build needed'",
+    "test": "echo 'No tests configured'"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.1.1"
+  }
+}
