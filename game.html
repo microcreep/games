@@ -7,7 +7,7 @@
     <style>
         body { background: #1e1e2e; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
         .navigation-row { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 20px auto; }
-        .back-btn { padding: 10px 20px; background: #f38ba8; border: none; border-radius: 6px; cursor: pointer; color: #11111b; font-weight: bold; }
+        .back-btn { padding: 10px 20px; background: #f38ba8; border: none; border-radius: 6px; cursor: pointer; color: #11111b; font-weight: bold; font-size: 14px; }
         .player-tag { font-size: 14px; color: #fab387; font-weight: bold; background: #313244; padding: 8px 14px; border-radius: 20px; }
         
         #game-area { max-width: 1000px; margin: 0 auto; }
@@ -42,9 +42,11 @@
 
     <script src="app.js"></script>
     <script>
-        verifyAccess();
+        verifyAccess(); // Security check
 
-        // Check if user credentials are correct or force them back out
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Check user credentials
         const userData = localStorage.getItem('goose_user');
         let activeUser = null;
         if (!userData) {
@@ -55,15 +57,14 @@
         }
 
         // --- DATABASE SYNC HOOKS ---
-        const SUPABASE_URL = 'https://xkyvyyjlexeadaqgexgw.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_ZytZF6HwieXZuAKcMNX_vQ_IjX8gduC';
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
         let supabase = null;
-        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
-        // Auto Boot the Selected Game Asset Script
-        const urlParams = new URLSearchParams(window.location.search);
+        // Load the chosen game script file
         const activeGame = urlParams.get('game') || 'dino';
         document.getElementById('game-title').innerText = activeGame.toUpperCase() + " RUNNER";
 
@@ -78,36 +79,41 @@
                 return;
             }
 
-            const { data } = await supabase.from('leaderboards').select('display_name, score').order('score', { ascending: false }).limit(10);
-            container.innerHTML = '';
-            if(!data || data.length === 0) {
-                container.innerHTML = '<li>No public records yet!</li>';
-                return;
+            try {
+                const { data } = await supabase.from('leaderboards').select('display_name, score').order('score', { ascending: false }).limit(10);
+                container.innerHTML = '';
+                if(!data || data.length === 0) {
+                    container.innerHTML = '<li>No public records yet!</li>';
+                    return;
+                }
+                data.forEach((row, i) => {
+                    container.innerHTML += `<li><span>${i + 1}. ${row.display_name}</span> <strong>${row.score} pts</strong></li>`;
+                });
+            } catch(e) {
+                container.innerHTML = '<li>Error loading live stats.</li>';
             }
-            data.forEach((row, i) => {
-                container.innerHTML += `<li><span>${i + 1}. ${row.display_name}</span> <strong>${row.score} pts</strong></li>`;
-            });
         }
         window.onload = fetchLiveLeaderboard;
 
         async function submitHighScore(finalScore) {
             if (!activeUser) return;
-            
-            // Check if user is using fallback local memory storage
             if (!supabase || activeUser.local) {
-                console.log("Score safely cached in Local Sandbox Engine:", finalScore);
+                console.log("Score safely cached locally:", finalScore);
                 return;
             }
 
-            // Retrieve true session id token safely from Supabase Client Cache
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                await supabase.from('leaderboards').insert({
-                    user_id: session.user.id,
-                    display_name: activeUser.display_name,
-                    score: finalScore
-                });
-                fetchLiveLeaderboard();
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    await supabase.from('leaderboards').insert({
+                        user_id: session.user.id,
+                        display_name: activeUser.display_name,
+                        score: finalScore
+                    });
+                    fetchLiveLeaderboard();
+                }
+            } catch(err) {
+                console.error("Score submit error:", err);
             }
         }
 
@@ -116,7 +122,7 @@
         }
 
         function goBackToArcade() {
-            const key = urlParams.get('key');
+            const key = urlParams.get('key') || getDailySecret();
             window.location.href = `arcade.html?key=${key}`;
         }
     </script>

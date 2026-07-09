@@ -7,13 +7,13 @@
     <style>
         body { background: #1e1e2e; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 40px 20px; }
         h1 { color: #a6e3a1; font-size: 2.8rem; margin-bottom: 5px; }
-        .subtitle { color: #bac2de; margin-bottom: 40px; font-size: 1.1rem;}
+        .subtitle { color: #bac2de; margin-bottom: 40px; font-size: 1.1rem; }
         .user-badge { background: #45475a; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 20px; font-size: 14px; color: #fab387; font-weight: bold; }
         .arcade-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; max-width: 900px; margin: 0 auto; }
         .game-card { background: #313244; border: 2px solid #45475a; border-radius: 12px; padding: 25px; text-decoration: none; color: #fff; transition: transform 0.2s, border-color 0.2s; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .game-card:hover { transform: translateY(-5px); border-color: #a6e3a1; }
         .game-icon { font-size: 48px; margin-bottom: 15px; }
-        .game-card h3 { margin: 10px 0 8px 0; color: #f5e0dc; font-size: 1.3rem;}
+        .game-card h3 { margin: 10px 0 8px 0; color: #f5e0dc; font-size: 1.3rem; }
         .game-card p { margin: 0; font-size: 14px; color: #a6adc8; line-height: 1.4; }
     </style>
 </head>
@@ -38,13 +38,13 @@
 
     <script src="app.js"></script>
     <script>
-        verifyAccess(); // Check daily link key
+        verifyAccess(); // Verify daily key
 
-        // Identity Verification Step Before Allowing Play
+        // Get user profile or redirect to login wall
         const userData = localStorage.getItem('goose_user');
         if (!userData) {
             alert("Identity profile unverified! Redirecting back to authentication portal.");
-            const key = new URLSearchParams(window.location.search).get('key');
+            const key = new URLSearchParams(window.location.search).get('key') || getDailySecret();
             window.location.href = `auth.html?key=${key}`;
         } else {
             const user = JSON.parse(userData);
@@ -52,7 +52,7 @@
         }
 
         function launchGame(gameId) {
-            const key = new URLSearchParams(window.location.search).get('key');
+            const key = new URLSearchParams(window.location.search).get('key') || getDailySecret();
             window.location.href = `game.html?key=${key}&game=${gameId}`;
         }
     </script>
